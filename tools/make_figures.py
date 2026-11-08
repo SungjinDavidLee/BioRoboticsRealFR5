@@ -15,7 +15,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
-from matplotlib.patches import Circle  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA, FIG = ROOT / "data", ROOT / "fig"
@@ -32,8 +31,6 @@ plt.rcParams.update({
     "axes.titlesize": 11, "legend.frameon": False,
 })
 
-FIXED_RED = (8.1, 537.4)        # 고정 배치 — 벤치마크 기록 시작 장면 인식의 중앙값
-FIXED_SLOT = (226.6, 458.0)
 
 
 def rd(name):
@@ -57,32 +54,26 @@ def ramp(hex_color):
 def fig_train_layout(T):
     red = np.array([[float(t["red_x"]), float(t["red_y"])] for t in T])
     slot = np.array([[float(t["slot_x"]), float(t["slot_y"])] for t in T])
-    both80 = sum(max(math.dist(r, FIXED_RED), math.dist(s, FIXED_SLOT)) < 80 for r, s in zip(red, slot))
     gx, gy = np.meshgrid(np.arange(-280, 341, 5), np.arange(390, 701, 5))
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.6))
-    for ax, P, fx, col, title, who in ((axes[0], red, FIXED_RED, OI["vermillion"], "빨간 튜브를 잡은 자리", "튜브"),
-                                       (axes[1], slot, FIXED_SLOT, OI["blue"], "튜브를 꽂은 링 칸 자리", "링 칸")):
+    for ax, P, col, title in ((axes[0], red, OI["vermillion"], "빨간 튜브를 잡은 자리"),
+                              (axes[1], slot, OI["blue"], "튜브를 꽂은 링 칸 자리")):
         cnt = np.zeros_like(gx, dtype=float)
         for x, y in P:
             cnt += np.hypot(gx - x, gy - y) < 50
         im = ax.pcolormesh(gx, gy, np.ma.masked_less(cnt, 0.5), cmap=ramp(col), vmin=0, vmax=max(8, cnt.max()), shading="auto", alpha=0.55)
         ax.scatter(P[:, 0], P[:, 1], s=13, color=col, edgecolor="white", linewidth=0.4, zorder=3, label=f"학습 판 ({len(P)})")
-        n80 = int(sum(math.dist(p, fx) < 80 for p in P))
-        ax.add_patch(Circle(fx, 80, fill=False, ls="--", lw=1.2, ec=INK, zorder=4))
-        ax.scatter([fx[0]], [fx[1]], marker="X", s=110, color=INK, edgecolor="white", linewidth=0.8, zorder=5, label="벤치마크 고정 배치")
         ax.set_xlim(-280, 340)
         ax.set_ylim(390, 700)
         ax.set_aspect("equal")
-        ax.set_title(f"{title} (200판)\n", loc="left")
-        ax.text(0, 1.015, f"✕ 고정 배치 {who} · 점선 반경 80 mm 안 학습 판 {n80}", transform=ax.transAxes, fontsize=9, color=INK2)
+        ax.set_title(f"{title} (200판)", loc="left")
         ax.set_xlabel("x 좌우 (mm, 로봇 베이스)")
         ax.set_ylabel("y 앞 (mm)")
         cb = fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.6, pad=0.2, aspect=40)
         cb.set_label("반경 50 mm 안 학습 판 수", color=INK2)
         cb.outline.set_visible(False)
         ax.legend(loc="lower left", fontsize=8.5, frameon=True, facecolor="white", edgecolor="none", framealpha=0.85)
-    fig.suptitle(f"학습 데이터 배치 분포 — 고정 배치는 튜브·링 칸 둘 다 80 mm 안에 드는 학습 판이 {both80}판뿐이다",
-                 x=0.01, y=1.02, ha="left", fontsize=11.5, color=INK)
+    fig.suptitle("학습 데이터 배치 분포 — 작업대 위 튜브 자리와 링 칸 자리", x=0.01, y=1.02, ha="left", fontsize=11.5, color=INK)
     fig.savefig(FIG / "train_layout.png")
     plt.close(fig)
 
@@ -128,8 +119,8 @@ def fig_layout_stats(T):
 
 # ------------------------------------------------------------------ 3. 성공률
 def fig_success(S):
-    cols = [OI["black"], OI["blue"], OI["green"]]
-    fig, ax = plt.subplots(figsize=(8.6, 2.9))
+    cols = [OI["black"], OI["green"]]
+    fig, ax = plt.subplots(figsize=(8.6, 2.2))
     for i, (s, c) in enumerate(zip(S, cols)):
         k, n = int(s["success"]), int(s["trials"])
         lo, hi = wilson(k, n)
@@ -143,43 +134,46 @@ def fig_success(S):
     ax.set_ylim(-0.7, len(S) - 0.4)
     ax.set_xlabel("성공률 (%) — 점: 관측값, 선: Wilson 95% 구간")
     ax.grid(axis="y", visible=False)
-    ax.set_title("실물 벤치마크 성공률 (같은 과제, 시행 30회씩)", loc="left")
+    ax.set_title("실물 성공률 — 랜덤 배치, 시행 30회씩", loc="left")
     fig.savefig(FIG / "success_rate.png")
     plt.close(fig)
 
 
-# ------------------------------------------------------------------ 4. 결과 구성
-def fig_breakdown(F, Rn):
-    c = {k: 0 for k in ("성공", "꽂기 실패", "잡은 뒤 실패·부분", "잡기 실패")}
-    for r in F:
-        cat = r["category"]
-        key = "성공" if cat == "성공" else "잡기 실패" if cat.startswith("잡기") else "꽂기 실패" if cat.startswith("꽂기") else "잡은 뒤 실패·부분"
-        c[key] += 1
-    rnd = {"성공": sum(int(r["success"]) for r in Rn), "꽂기 실패": sum(int(r["place_miss"]) for r in Rn),
-           "잡은 뒤 실패·부분": sum(int(r["after_grasp_fail"]) for r in Rn), "잡기 실패": sum(int(r["grasp_fail"]) for r in Rn)}
-    rows = [("고정 배치 30회\n(벤치마크 기록)", c), ("랜덤 배치 30회\n(운영자 집계, 근사)", rnd)]
-    colors = {"성공": OI["green"], "꽂기 실패": OI["orange"], "잡은 뒤 실패·부분": OI["sky"], "잡기 실패": OI["vermillion"]}
-    fig, ax = plt.subplots(figsize=(9.2, 2.8))
-    for i, (name, d) in enumerate(rows):
-        y, left = 1 - i, 0
-        for k, v in d.items():
-            if v:
-                ax.barh(y, v, left=left, height=0.55, color=colors[k], edgecolor="white", linewidth=2)
-                ax.text(left + v / 2, y, str(v), ha="center", va="center", fontsize=9.5, color="white" if k in ("성공", "잡기 실패") else INK,
-                        fontweight="bold")
-            left += v
-        grasp = d["성공"] + d["꽂기 실패"] + d["잡은 뒤 실패·부분"]
-        ax.text(30.6, y, f"잡기 {grasp}/30 · 잡은 뒤 성공 {d['성공']}/{grasp}", va="center", fontsize=9, color=INK)
-    ax.set_yticks([1, 0], [r[0] for r in rows])
-    ax.set_xlim(0, 44)
+# ------------------------------------------------------------------ 4. 결과 구성 (200판 정책, 랜덤 배치)
+def fig_breakdown(Rn, Lay):
+    d = {"성공": sum(int(r["success"]) for r in Rn), "꽂기 실패": sum(int(r["place_miss"]) for r in Rn),
+         "잡은 뒤 실패": sum(int(r["after_grasp_fail"]) for r in Rn), "잡기 실패": sum(int(r["grasp_fail"]) for r in Rn)}
+    colors = {"성공": OI["green"], "꽂기 실패": OI["orange"], "잡은 뒤 실패": OI["sky"], "잡기 실패": OI["vermillion"]}
+    fig, axes = plt.subplots(1, 2, figsize=(11, 2.9), gridspec_kw={"width_ratios": [2.2, 1], "wspace": 0.28})
+    ax = axes[0]
+    left = 0
+    for k, v in d.items():
+        if v:
+            ax.barh(0, v, left=left, height=0.5, color=colors[k], edgecolor="white", linewidth=2, label=k)
+            ax.text(left + v / 2, 0, str(v), ha="center", va="center", fontsize=10, fontweight="bold",
+                    color="white" if k in ("성공", "잡기 실패") else INK)
+        left += v
+    grasp = d["성공"] + d["꽂기 실패"] + d["잡은 뒤 실패"]
+    ax.set_xlim(0, 30)
+    ax.set_ylim(-0.6, 0.9)
+    ax.set_yticks([])
     ax.set_xticks(range(0, 31, 5))
-    ax.set_xlabel("시행 수")
+    ax.set_xlabel("시행 수 (30회)")
     ax.grid(axis="y", visible=False)
-    ax.spines["bottom"].set_bounds(0, 30)
-    handles = [plt.Rectangle((0, 0), 1, 1, color=colors[k]) for k in colors]
-    fig.subplots_adjust(top=0.74)
-    fig.text(0.01, 0.97, "시행 결과 구성", fontsize=11, fontweight="bold", color=INK, va="top")
-    fig.legend(handles, list(colors), ncol=4, loc="upper left", bbox_to_anchor=(0.01, 0.89), fontsize=9)
+    ax.spines["left"].set_visible(False)
+    ax.legend(ncol=4, loc="upper left", bbox_to_anchor=(0, 1.02), fontsize=9, handlelength=1.2)
+    ax.set_title(f"30회 결과 구성 — 잡기 {grasp}/30, 잡은 뒤 성공 {d['성공']}/{grasp} (운영자 집계)", loc="left")
+    ax = axes[1]
+    k = [int(r["successes_in_3"]) for r in Lay]
+    n = [int(r["layouts"]) for r in Lay]
+    ax.bar(k, n, 0.6, color=[OI["vermillion"] if i == 0 else OI["green"] for i in k], edgecolor="white")
+    for i, v in zip(k, n):
+        ax.text(i, v + 0.15, str(v), ha="center", fontsize=9.5, color=INK)
+    ax.set_xticks(k, [f"{i}/3" for i in k])
+    ax.set_ylim(0, max(n) + 1.2)
+    ax.set_xlabel("배치 하나에서 성공한 횟수")
+    ax.set_ylabel("배치 수")
+    ax.set_title(f"배치 {sum(n)}개 × 3회", loc="left")
     fig.savefig(FIG / "outcome_breakdown.png")
     plt.close(fig)
 
@@ -215,29 +209,62 @@ def fig_frames():
     plt.close(fig)
 
 
-# ------------------------------------------------------------------ 6. 고정 배치에서 닫은 자리
-def fig_close(F):
-    fig, ax = plt.subplots(figsize=(5.4, 5.0))
-    ax.add_patch(Circle((0, 0), 14.3, fill=False, ec=INK2, lw=1.0, ls="--"))
-    ax.text(11, 11, "튜브 지름\n28.6 mm", ha="left", va="bottom", fontsize=8, color=INK2)
-    for ok, col, lab in ((True, OI["green"], "잡음"), (False, OI["vermillion"], "빈손으로 닫음")):
-        P = [(float(r["close_x"]) - FIXED_RED[0], float(r["close_y"]) - FIXED_RED[1]) for r in F
-             if r["close_x"] != "" and (r["grasp"] == "1") == ok]
-        if P:
-            P = np.array(P)
-            med = float(np.median(np.hypot(P[:, 0], P[:, 1])))
-            ax.scatter(P[:, 0], P[:, 1], s=46, color=col, edgecolor="white", linewidth=0.8, zorder=3,
-                       label=f"{lab} {len(P)}회 · 중앙 {med:.0f} mm")
-    ax.axhline(0, color=GRID, lw=0.8)
-    ax.axvline(0, color=GRID, lw=0.8)
-    ax.set_xlim(-40, 40)
-    ax.set_ylim(-40, 40)
+# ------------------------------------------------------------------ 6. 시연 한 판의 움직임
+def fig_motion(M):
+    eps = {}
+    for r in M:
+        eps.setdefault(r["ep"], []).append((float(r["t_s"]), float(r["x_mm"]), float(r["y_mm"]), float(r["z_mm"]), float(r["grip_mm"])))
+    fig = plt.figure(figsize=(12, 5.2))
+    gs = fig.add_gridspec(2, 2, width_ratios=[1.45, 1], height_ratios=[1.25, 1], hspace=0.12, wspace=0.18)
+    az, ag, ax = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[:, 1])
+    grid = np.arange(-7.0, 21.01, 0.1)
+    Z, Gw, opens = [], [], []
+    for ep, A in eps.items():
+        A = np.array(A)
+        t, g = A[:, 0], A[:, 4]
+        ic = int(np.argmax(g < 34))
+        io = next((k for k in range(ic + 1, len(g)) if g[k] > 20 and g[ic:k].min() < 20), None)
+        tt = t - t[ic]
+        az.plot(tt, A[:, 3], color=INK2, lw=0.4, alpha=0.18)
+        ag.plot(tt, g, color=INK2, lw=0.4, alpha=0.18)
+        Z.append(np.interp(grid, tt, A[:, 3], left=np.nan, right=np.nan))
+        Gw.append(np.interp(grid, tt, g, left=np.nan, right=np.nan))
+        if io is not None:
+            opens.append(tt[io])
+        held = slice(ic, (io or len(A)) + 1)
+        ax.plot(A[: ic + 1, 1], A[: ic + 1, 2], color=OI["vermillion"], lw=0.5, alpha=0.35)
+        ax.plot(A[held, 1], A[held, 2], color=OI["blue"], lw=0.5, alpha=0.35)
+    with np.errstate(all="ignore"):
+        Zm, Gm = np.nanmedian(np.array(Z), 0), np.nanmedian(np.array(Gw), 0)
+    ok = np.sum(~np.isnan(np.array(Z)), 0) >= 100
+    az.plot(grid[ok], Zm[ok], color=OI["black"], lw=2, label="중앙값")
+    ag.plot(grid[ok], Gm[ok], color=OI["black"], lw=2)
+    to = float(np.median(opens))
+    for a in (az, ag):
+        a.axvline(0, color=OI["vermillion"], lw=1.2, ls="--")
+        a.axvline(to, color=OI["blue"], lw=1.2, ls="--")
+        a.set_xlim(-7, 20)
+    az.text(0.2, 300, "닫기 시작", color=OI["vermillion"], fontsize=9)
+    az.text(to + 0.2, 300, f"열기 시작 (중앙 +{to:.1f} s)", color=OI["blue"], fontsize=9)
+    az.set_ylim(100, 315)
+    az.set_ylabel("손끝 높이 z (mm)")
+    az.set_xticklabels([])
+    az.set_title(f"시연 {len(eps)}판 — 닫기 시작 시각에 맞춰 겹침", loc="left")
+    az.legend(loc="lower left", fontsize=8.5)
+    ag.set_ylim(0, 45)
+    ag.set_ylabel("손가락 폭 (mm)")
+    ag.set_xlabel("닫기 시작으로부터 시간 (s)")
+    ax.scatter([eps[next(iter(eps))][0][1]], [eps[next(iter(eps))][0][2]], marker="s", s=60, color=INK, zorder=5, label="초기 자세")
+    ax.plot([], [], color=OI["vermillion"], lw=2, label="잡기까지")
+    ax.plot([], [], color=OI["blue"], lw=2, label="쥐고 옮기기")
     ax.set_aspect("equal")
-    ax.set_xlabel("x 좌우 차이 (mm)")
-    ax.set_ylabel("y 앞 차이 (mm) — 음수 = 로봇 쪽")
-    ax.set_title("고정 배치: 그리퍼를 닫은 자리 − 튜브 자리", loc="left")
-    ax.legend(loc="upper left", fontsize=8.5)
-    fig.savefig(FIG / "fixed_close_offset.png")
+    ax.set_xlim(-280, 340)
+    ax.set_ylim(390, 700)
+    ax.set_xlabel("x 좌우 (mm, 로봇 베이스)")
+    ax.set_ylabel("y 앞 (mm)")
+    ax.set_title("위에서 본 손끝 경로", loc="left")
+    ax.legend(loc="upper left", fontsize=8.5, frameon=True, facecolor="white", edgecolor="none", framealpha=0.85)
+    fig.savefig(FIG / "demo_motion.png")
     plt.close(fig)
 
 
@@ -263,8 +290,8 @@ def main():
     fig_train_layout(T)
     fig_layout_stats(T)
     fig_success(rd("bench_summary.csv"))
-    fig_breakdown(rd("bench_fixed_30.csv"), rd("bench_random_30.csv"))
-    fig_close(rd("bench_fixed_30.csv"))
+    fig_breakdown(rd("bench_random_30.csv"), rd("bench_random_layouts.csv"))
+    fig_motion(rd("train_motion.csv"))
     fig_frames()
     fig_views()
     print("그림:", ", ".join(sorted(p.name for p in FIG.iterdir())))
