@@ -1,3 +1,0 @@
-condition,train_episodes,layout,trials,success,source,note
-100판 학습 · 랜덤 배치,100,랜덤,30,0,운영자 보고,v1 데이터로 학습한 정책
-200판 학습 · 랜덤 배치,200,랜덤(배치 10개 × 3회),30,7,운영자 집계,기록 파일 없음
