@@ -69,7 +69,7 @@ def fig_layout(B, H, HA):
     for n in xs:
         R = [r for r in H if int(r["layout"]) == n]
         if R and not any(int(r["hy_ready"]) for r in R):
-            a1.text(n + 0.5 * w, 1.2, "수식\n준비\n못 함", ha="center", va="bottom", fontsize=7.5, color=INK2, linespacing=1.0)
+            a1.text(n + 0.5 * w, sum(1 for r in R if r["verdict"] == "success") + 0.15, "수식\n준비\n못 함", ha="center", va="bottom", fontsize=7.5, color=INK2, linespacing=1.0)
     X = [r for r in HA if r["counted"] == "0"]
     if X:
         n = int(X[0]["layout"])

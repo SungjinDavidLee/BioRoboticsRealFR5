@@ -1,31 +1,31 @@
 {
  "n": 30,
- "invalid": 1,
- "extra": 3,
+ "invalid": 4,
+ "extra": 0,
  "verdict": {
-  "success": 13,
-  "partial": 5,
-  "fail": 12
+  "success": 18,
+  "partial": 3,
+  "fail": 9
  },
  "stages": {
-  "S1": 22,
-  "S2": 20,
-  "S4": 18,
-  "S6": 18,
-  "S8": 16,
-  "S9": 13
+  "S1": 24,
+  "S2": 23,
+  "S4": 21,
+  "S6": 21,
+  "S8": 19,
+  "S9": 18
  },
  "first_fail": {
-  "S1": 8,
-  "S2": 2,
+  "S1": 6,
+  "S2": 1,
   "S4": 2,
   "S6": 0,
   "S8": 2,
-  "S9": 3
+  "S9": 1
  },
  "success_wilson95": [
-  27,
-  61
+  42,
+  75
  ],
  "vla_only_200B": {
   "success": 12,
@@ -43,26 +43,26 @@
    "S9": 12
   }
  },
- "fisher_p_success": 1.0,
+ "fisher_p_success": 0.196,
  "formula": {
   "ready": 24,
-  "grasp_handoff": 17,
-  "grasp_handoff_red": 14,
+  "grasp_handoff": 20,
+  "grasp_handoff_red": 17,
   "grasp_handoff_yellow": 3,
-  "grasp_ok": 17,
+  "grasp_ok": 20,
   "grasp_rejected": {
-   "far": 7
+   "far": 4
   },
-  "place_handoff": 19,
-  "place_handoff_red": 14,
-  "place_red_success": 13,
+  "place_handoff": 22,
+  "place_handoff_red": 17,
+  "place_red_success": 16,
   "place_stopped": 1
  },
  "cause": {
-  "success": 13,
-  "other_tube": 8,
-  "vla_closed_outside_25mm": 2,
-  "not_ready": 6,
+  "success": 18,
+  "other_tube": 6,
+  "vla_closed_outside_25mm": 1,
+  "not_ready": 4,
   "inserted_not_seated": 1
  },
  "per_layout": {
@@ -73,7 +73,7 @@
   },
   "2": {
    "vla_only": 1,
-   "hybrid": 0,
+   "hybrid": 2,
    "hybrid_ready": 0
   },
   "3": {
@@ -98,7 +98,7 @@
   },
   "7": {
    "vla_only": 3,
-   "hybrid": 0,
+   "hybrid": 3,
    "hybrid_ready": 3
   },
   "8": {
@@ -117,21 +117,5 @@
    "hybrid_ready": 3
   }
  },
- "extra_trials": [
-  {
-   "layout": 7,
-   "trial": 4,
-   "verdict": "success"
-  },
-  {
-   "layout": 7,
-   "trial": 5,
-   "verdict": "success"
-  },
-  {
-   "layout": 7,
-   "trial": 6,
-   "verdict": "success"
-  }
- ]
+ "extra_trials": []
 }

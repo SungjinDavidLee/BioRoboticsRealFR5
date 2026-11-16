@@ -9,7 +9,7 @@
 > - 평가 단계표는 FR3 결과([BioRoboticsMVLAFranka](https://github.com/SungjinDavidLee/BioRoboticsMVLAFranka))의 S0–S9를 FR5 기록에 맞춰 썼다(4절).
 > - 추가: 200판 모델에 VLA + 수식(자동 보정)을 붙여 같은 배치 L1–L10에서 다시 쟀다(9절).
 
-**English summary.** Two GR00T N1.7 policies fine-tuned for a FAIRINO FR5 tube-insertion task were each run 30 times on ten layouts (L1–L10, three valid trials per layout) and scored stage by stage (S9 = the red tube is inserted into the red-ringed slot, by human judgement). **1200** — 200 scripted real demonstrations repeated three times plus 600 simulated ones: 16/30 (53%, Wilson 95% CI 36–70%). **200** — the same 200 real demonstrations alone, with colour/brightness augmentation: 12/30 (40%, 25–58%). The difference is not significant (Fisher p = 0.44). Both models reached and grasped the red tube at almost the same rate (S4 19 vs 18 of 30) and every grasped tube was lifted and carried to within about 20 mm of the slot; the gap came from the last step (inserted 16/19 vs 12/18, p = 0.27). Both failed on L3 (the gripper closed nearer the yellow tube in 5 of 6 trials) and L10. The two runs were on different days and the racks were placed by hand from photos, so the same layout number differed by 8–60 mm (tube) and 9–88 mm (slot) between the two days; per-layout comparisons are therefore not paired. **Added (section 9):** the same 200 checkpoint run with a scripted hand-off for the last millimetres of grasping and insertion (rules taken from the FR3 study): 13/30 (43%, 27–61%) vs 12/30 VLA-only (p = 1.0). All 14 red-tube grasp hand-offs held the tube and 13 of 14 insertions seated, but the overall rate barely moved because the remaining failures were wrong-tube choices (8), start-scene recognition failures that left the hand-off unarmed (6) and closes beyond the 25 mm hand-off radius (2).
+**English summary.** Two GR00T N1.7 policies fine-tuned for a FAIRINO FR5 tube-insertion task were each run 30 times on ten layouts (L1–L10, three valid trials per layout) and scored stage by stage (S9 = the red tube is inserted into the red-ringed slot, by human judgement). **1200** — 200 scripted real demonstrations repeated three times plus 600 simulated ones: 16/30 (53%, Wilson 95% CI 36–70%). **200** — the same 200 real demonstrations alone, with colour/brightness augmentation: 12/30 (40%, 25–58%). The difference is not significant (Fisher p = 0.44). Both models reached and grasped the red tube at almost the same rate (S4 19 vs 18 of 30) and every grasped tube was lifted and carried to within about 20 mm of the slot; the gap came from the last step (inserted 16/19 vs 12/18, p = 0.27). Both failed on L3 (the gripper closed nearer the yellow tube in 5 of 6 trials) and L10. The two runs were on different days and the racks were placed by hand from photos, so the same layout number differed by 8–60 mm (tube) and 9–88 mm (slot) between the two days; per-layout comparisons are therefore not paired. **Added (section 9):** the same 200 checkpoint run with a scripted hand-off for the last millimetres of grasping and insertion (rules taken from the FR3 study): 18/30 (60%, 42–75%) vs 12/30 VLA-only (p = 0.20, not significant). All 17 red-tube grasp hand-offs held the tube and 16 of 17 insertions seated; insertion after transport rose from 12/18 to 18/19. The remaining failures were wrong-tube choices (6), start-scene recognition failures that left the hand-off unarmed (4), one close beyond the 25 mm hand-off radius and one partial insertion.
 
 **과제 한 판 — 평가표 단계로 본 네 장면: S0 초기 위치 · S4 쥐기 · S8 이송 · S9 꽂힘**
 
@@ -345,55 +345,56 @@
 - 시간: 2026-11-15 저녁(L2 · L3 · L5 · L6 · L8 · L10), 11-16 오전(L1 · L4 · L7 · L9). 비교 대상은 같은 체크포인트의 VLA만 평가(11-15 오후)다.
 - 배치는 VLA만 평가의 시작 장면을 기준으로 놓고 판마다 차이를 기록했다. 빨간 튜브는 가운데값 28 mm(0–90 mm), 링 칸은 23 mm(0–81 mm) 달랐다.
 - 실행 조건은 3.2절과 같다. 왕복 시간 가운데값 280 ms, 판 시작 3인칭 밝기 147–157.
-- 판정과 채점은 4절 그대로다. 수식이 준비되지 못해 VLA만으로 돈 판도 그대로 센다. 무효 1판(앞 판의 튜브가 링 칸에 꽂힌 채 시작해 멈춤)은 뺐다.
+- 판정과 채점은 4절 그대로다. 수식이 준비되지 못해 VLA만으로 돈 판도 그대로 센다. 무효 4판은 뺐다: 앞 판의 튜브가 링 칸에 꽂힌 채 시작해 멈춘 1판(L9), 받침을 오후 자리와 62 mm 어긋나게 놓고 돈 L7 3판. L7은 다시 놓고(36 mm) 3판을 새로 돌렸다.
 
 ### 9.3 결과
 
 | 조건 | 판 | 성공 (Wilson 95%) | 부분 | 실패 |
 |---|---|---|---|---|
 | 200판 VLA만 | 30 | 12 (40%, 25–58%) | 6 | 12 |
-| 200판 + 수식 | 30 | **13 (43%, 27–61%)** | 5 | 12 |
+| 200판 + 수식 | 30 | **18 (60%, 42–75%)** | 3 | 9 |
 
-두 조건의 성공률 차이는 없다(Fisher p = 1.0).
+성공은 6판 많지만 차이는 통계적으로 확정되지 않는다(Fisher p = 0.20).
 
 ![VLA만 vs VLA + 수식 단계별 누적 통과율](figs/fig_hy_stage_cumulative.png)
 
 | 단계 | VLA만 | + 수식 |
 |---|---|---|
-| S1 목표 선택 | 26 | 22 |
-| S2 접근 | 22 | 20 |
-| S4 쥐기 | 18 | 18 |
-| S6 들기 | 18 | 18 |
-| S8 이송 | 18 | 16 |
-| S9 꽂힘 | 12 | 13 |
+| S1 목표 선택 | 26 | 24 |
+| S2 접근 | 22 | 23 |
+| S4 쥐기 | 18 | 21 |
+| S6 들기 | 18 | 21 |
+| S8 이송 | 18 | 19 |
+| S9 꽂힘 | 12 | 18 |
 
-- 쥐기(S4)까지 온 판은 두 조건 모두 18판이다.
-- 목표 선택(S1)은 수식 쪽이 4판 적다. 늘어난 4판은 L7 2판(빨강과 노랑 사이의 빈 구멍 위에서 닫음, 노랑이 1–3 mm 더 가까움)과 L10 2판(노란 튜브로 감)이다.
-- S8 차이 2판은 링 칸을 인식하지 못한 L5 2판이다. 링 칸 자리를 몰라 통과로 세지 않았다.
+- 차이는 대부분 마지막 꽂기에서 났다. 이송(S8)까지 온 판 중 꽂힌 판이 VLA만 12/18, + 수식 18/19다.
+- 쥐기(S4)까지 온 판은 수식 쪽이 3판 많다(21 vs 18).
+- 목표 선택(S1)은 수식 쪽이 2판 적다. L10 2판이 노란 튜브로 갔다.
+- 들기(S6)에서 이송(S8)으로 가며 수식 쪽 2판이 빠진 것은 링 칸을 인식하지 못한 L5 2판이다. 링 칸 자리를 몰라 통과로 세지 않았다.
 
 수식이 맡은 부분은 아래와 같다.
 
 | 항목 | 결과 |
 |---|---|
 | 수식 준비(시작 장면에서 뚜껑 · 링 칸 인식) | 24/30 — L2 · L5 6판은 링 칸 인식 실패로 VLA만 |
-| 잡기 넘김 | 17판(빨강 14 · 노랑 3), 17판 모두 쥠. 닫을 때 계획과 수평 0.0–0.1 mm, 쥔 폭 28.1–28.3 mm |
-| 빨간 뚜껑 넘김 거리 | VLA가 닫으려던 자리 → 빨간 뚜껑 가운데값 14.8 mm (4.4–24.6) |
-| 잡기 안 넘김 | 7판 — 가장 가까운 뚜껑에서 25.8–37.4 mm, VLA가 그대로 닫음 |
-| 빨간 튜브 꽂기 넘김 | 14판 → 꽂힘 13, 덜 꽂힘 1(L1-2) |
-| 꽂기 넘김 거리 · 놓은 자리 | VLA가 내려가려던 자리 → 링 칸 가운데값 17.8 mm (4.2–23.2), 놓을 때 계획과 수평 3.0 mm (0.6–11.6) |
-| 수식이 준비된 판의 성공 | 13/24 (54%) |
-| 걸린 시간 | 수식 잡기 9.2 s (6.8–15.3), 수식 꽂기 14.1 s (12.8–26.8), 성공 판 전체 31.5 s (27.5–60.1). VLA만 성공 판은 26.0 s |
+| 잡기 넘김 | 20판(빨강 17 · 노랑 3), 20판 모두 쥠. 닫을 때 계획과 수평 0.0–0.1 mm, 쥔 폭 28.1–28.3 mm |
+| 빨간 뚜껑 넘김 거리 | VLA가 닫으려던 자리 → 빨간 뚜껑 가운데값 15.3 mm (4.4–24.6) |
+| 잡기 안 넘김 | 4판 — 가장 가까운 뚜껑에서 25.8–31.5 mm, VLA가 그대로 닫음 |
+| 빨간 튜브 꽂기 넘김 | 17판 → 꽂힘 16, 덜 꽂힘 1(L1-2) |
+| 꽂기 넘김 거리 · 놓은 자리 | VLA가 내려가려던 자리 → 링 칸 가운데값 16.4 mm (3.9–23.2), 놓을 때 계획과 수평 3.0 mm (0.6–11.6) |
+| 수식이 준비된 판의 성공 | 16/24 (67%) |
+| 걸린 시간 | 수식 잡기 9.1 s (6.8–15.3), 빨간 튜브 수식 꽂기 14.2 s (12.8–26.8), 성공 판 전체 33.3 s (27.5–60.1). VLA만 성공 판은 26.0 s |
 
 ![판마다 수식이 넘겨받은 자리](figs/fig_hy_handoff.png)
 
-성공하지 못한 17판의 원인:
+성공하지 못한 12판의 원인:
 
 | 원인 | 판 | 판 번호 |
 |---|---|---|
 | 목표 선택 — 노란 튜브를 쥠 | 5 | L3-1 · L3-3 · L10-2(수식이 넘겨받아 노랑을 잡음), L10-1 · L10-3(VLA가 직접 쥠) |
-| 목표 선택 — 노랑 쪽에서 닫아 빈손 | 3 | L3-2 · L7-1 · L7-2 |
-| 수식 준비 못 함 → VLA만 | 6 | L2-1 · L2-2 · L2-3 · L5-1 · L5-2 · L5-3 (실패 2 · 부분 4) |
-| VLA가 빨강에서 25 mm 밖에서 닫음 | 2 | L8-1 (26 mm) · L7-3 (30 mm) |
+| 목표 선택 — 노랑 쪽에서 닫아 빈손 | 1 | L3-2 |
+| 수식 준비 못 함 → VLA만 | 4 | L2-1 · L5-1 · L5-2 · L5-3 (실패 2 · 부분 2) |
+| VLA가 빨강에서 25 mm 밖에서 닫음 | 1 | L8-1 (26 mm) |
 | 수식 꽂기 뒤 덜 꽂힘 | 1 | L1-2 |
 
 ### 9.4 배치별
@@ -403,14 +404,15 @@
 | 배치 | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | 합 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 200판 VLA만 | 2/3 | 1/3 | 0/3 | 2/3 | 2/3 | 0/3 | 3/3 | 0/3 | 2/3 | 0/3 | 12/30 |
-| 200판 + 수식 | 2/3 | 0/3 | 0/3 | 3/3 | 0/3 | 3/3 | 0/3 | 2/3 | 3/3 | 0/3 | 13/30 |
+| 200판 + 수식 | 2/3 | 2/3 | 0/3 | 3/3 | 0/3 | 3/3 | 3/3 | 2/3 | 3/3 | 0/3 | 18/30 |
 | 수식 준비된 판 | 3 | 0 | 3 | 3 | 0 | 3 | 3 | 3 | 3 | 3 | 24 |
-| 오후 자리와 빨강 차이 (mm) | 18 | 6–9 | 35–36 | 26–28 | 48 | 0–1 | 62 | 28–29 | 28–29 | 14–90 | |
+| 오후 자리와 빨강 차이 (mm) | 18 | 6–9 | 35–36 | 26–28 | 48 | 0–1 | 36 | 28–29 | 28–29 | 14–90 | |
 
-- 성공이 늘어난 배치는 L6(+3) · L8(+2) · L4(+1) · L9(+1)이다. VLA가 빨간 뚜껑 25 mm 안까지 온 판을 수식이 쥐고 꽂았다.
-- 성공이 줄어든 배치는 L7(−3) · L5(−2) · L2(−1)이다.
-  - L7은 빨간 튜브가 오후 자리와 62 mm 달랐고, VLA가 3판 모두 빨강 · 노랑 사이 빈 구멍 위에서 닫았다(뚜껑까지 30–37 mm). 받침을 옮겨 차이를 36 mm로 줄이고 3판을 더 돌렸을 때는 VLA가 빨강 15–23 mm 안으로 왔고 3/3 성공했다. 이 3판은 센 판에 넣지 않았다.
-  - L2 · L5는 링 칸 인식이 안 돼 수식 없이 VLA만으로 돈 판이다.
+- 성공이 늘어난 배치는 L6(+3) · L8(+2) · L4(+1) · L9(+1) · L2(+1)이다.
+  - L6 · L8 · L4 · L9는 VLA가 빨간 뚜껑 25 mm 안까지 온 판을 수식이 쥐고 꽂았다. L6 · L8은 VLA만 평가에서 21–38 mm 거리로 헛잡던 배치다.
+  - L2는 링 칸 인식이 안 돼 수식 없이 VLA만으로 돈 판이라 수식 효과가 아니다.
+- 성공이 줄어든 배치는 L5(−2)다. 링 칸 인식이 안 돼 VLA만으로 돌았다.
+- L7은 두 조건 모두 3/3이다. 수식 쪽은 VLA가 빨강 15–23 mm 안에서 닫으려던 것을 3판 모두 수식이 넘겨받았다.
 - 노란 튜브 쪽으로 간 L3 · L10은 두 조건 모두 0/3이다.
 
 ### 9.5 실행 영상
@@ -425,14 +427,15 @@
 ### 9.6 해석과 한계
 
 - FR3에서는 같은 방식으로 VLA만 6/20(E2)에서 VLA + 수식 16/30(E4)이 됐다. 그때 VLA만의 실패는 대부분 맞는 튜브 근처에서 1 cm 안팎 빗나간 경우였다.
-- FR5 200판은 VLA만으로도 30판 중 18판을 이미 쥐었다. 수식이 넘겨받은 빨강 판은 잡기 14/14, 꽂기 13/14로 잘 됐지만, 남은 실패는 목표 선택(8) · 인식 실패(6) · 25 mm 밖(2) 쪽이라 수식이 고칠 수 있는 몫이 적었다.
-- 두 조건은 다른 시간대에 돌렸고, 배치 자리도 빨간 튜브 기준 가운데값 28 mm 달랐다. 같은 시간대에 번갈아 돌린 비교가 아니다. L7처럼 같은 배열에서 자리만 바뀌어도 결과가 0/3과 3/3으로 갈렸다.
+- FR5 200판 VLA만의 실패는 쥐기 전(12판)과 꽂기(6판)로 나뉜다. 수식은 꽂기 쪽을 거의 다 메웠고(이송 뒤 꽂힘 12/18 → 18/19), 쥐기 쪽은 VLA가 25 mm 안까지 온 판만 메웠다. 남은 실패는 목표 선택(6) · 인식 실패(4) · 25 mm 밖(1) · 덜 꽂힘(1)이다.
+- 두 조건은 다른 시간대에 돌렸고, 배치 자리도 빨간 튜브 기준 가운데값 28 mm 달랐다. 같은 시간대에 번갈아 돌린 비교가 아니다.
+- L7은 처음에 받침을 오후 자리와 62 mm 어긋나게 놓고 3판을 돌렸다(0/3, VLA가 빨강 · 노랑 사이 빈 구멍 위에서 닫음). 이 3판을 배치 잘못으로 무효 처리하고, 다시 놓고(36 mm) 돈 3판(3/3)을 셌다. 무효 처리는 결과를 본 뒤 정했다. 다른 배치도 오후 자리와 차이가 있었다(L10-2 · L10-3 90 mm, L5 48 mm).
 - 배치 순서는 VLA만 결과에서 0/3이던 배치(L3 · L6 · L8 · L10)부터 돌렸다. 10배치를 모두 돌렸으므로 순서만 다르다.
 - L6 3판은 v6.7a 규칙을 정한 직후 시험 기록으로 돈 판을 옮겨 넣었다. 3/3 결과를 본 뒤에 넣기로 정했다. L6 장면에는 링 칸이 인식되도록 보이는 구멍에 링을 하나 더 두어, VLA만 평가 때와 장면이 다르다.
-- L2 · L5 6판의 판정은 사람이 정했다. 시작 장면에 링 칸 자리가 없어 자동 판정이 끝 장면을 판정하지 못했다.
+- L2 · L5 6판은 시작 장면에 링 칸 자리가 없어 자동 판정이 꽂힘을 판정하지 못했다. 판정은 끝 장면 사진으로 사람이 정했다(L2-2 · L2-3 성공).
 - L10-1은 수식 꽂기 중 제어판 추종이 꺼져 그 자리에 멈췄다(노란 튜브 판, 실패). 원인은 기록으로 가리지 못했다.
 - 꽂기 미세조정이 한계(손목 5° · 좌우 3 mm)에 닿은 채 놓은 판이 많다. 11-16 오전에는 내려가기 전 튜브 기울기가 −8 ~ −11°였다.
-- 조건마다 30판이라 1판 차이로는 아무것도 말할 수 없다.
+- 조건마다 30판이라 6판 차이도 통계적으로 확정되지 않는다(p = 0.20).
 
 ---
 
@@ -459,8 +462,8 @@
 | `figs/fig_timeline_200_L9-1.png` | 한 판의 손끝 높이 · 손가락 폭 |
 | `figs/1200_L7-1_photos.jpg` | 1200판 성공 판 시작 · 끝 사진 |
 | `media/200_*.mp4`, `media/200_*_x3.gif` | 200판 실행 영상 4개 (실제 속도 · 3배속) |
-| `data/hybrid_trials.csv` | 200판 + 수식 유효 판 33개(센 판 30 + L7 자리 맞춤 추가 3, `counted`로 구분): `trials.csv`와 같은 열 + 수식 준비 · 잡기/꽂기 넘김 여부 · 넘김 거리 · 수식 구간 결과 · 오후 자리와 차이 |
-| `data/hybrid_invalid.csv` | 200판 + 수식 무효 1판 |
+| `data/hybrid_trials.csv` | 200판 + 수식 유효 판 30개: `trials.csv`와 같은 열 + 수식 준비 · 잡기/꽂기 넘김 여부 · 넘김 거리 · 수식 구간 결과 · 오후 자리와 차이 |
+| `data/hybrid_invalid.csv` | 200판 + 수식 무효 4판 (L7 배치 잘못 3 · L9 시작 상태 1) |
 | `data/hybrid_summary.json` | 200판 + 수식 누적 통과 · 처음 막힌 단계 · 수식 넘김 수 · 실패 원인 · 배치별 성공(VLA만과 나란히) |
 | `figs/hy_keyframes.jpg` | 200판 + 수식 L9-3 장면 띠 |
 | `figs/fig_hy_stage_cumulative.png` | VLA만 vs VLA + 수식 단계별 누적 통과율 |
