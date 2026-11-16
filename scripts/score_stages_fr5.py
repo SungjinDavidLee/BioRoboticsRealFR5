@@ -43,6 +43,66 @@ def hd(a, b):
     return None if a is None or b is None else math.dist(a[:2], b[:2])
 
 
+def score_trial(pack, t, m, n, ring, ring_src):
+    """판 하나의 단계 통과 · 지표. n = 그 배치의 유효 판 순번, ring = 링 칸 자리(ring_src 는 출처)."""
+    d = pack / "trials" / t["bench"] / t["dir"]
+    meta = json.loads((d / "meta.json").read_text()) if (d / "meta.json").is_file() else {}
+    tr = [[float(r["t_mono"]), f(r["x_mm"]), f(r["y_mm"]), f(r["z_mm"]), f(r["grip_pos"]), f(r["width_mm"])]
+          for r in csv.DictReader(open(d / "tcp.csv"))] if (d / "tcp.csv").is_file() else []
+    ev = meta.get("events") or []
+    ce = next((e for e in ev if e.get("ev") == "close" and e.get("xyz")), None)
+    oe = next((e for e in ev if e.get("ev") == "open" and e.get("xyz")), None)
+    red, yel = L(t["target_xy"]), L(t["other_xy"])
+    t_close = ce.get("tm") if ce else None
+    pre = [r for r in tr if t_close is None or r[0] <= t_close]
+    low = [r for r in pre if r[3] is not None and r[3] <= 170]
+    s = {}
+    if ce:
+        dr, dy = hd(ce["xyz"], red), hd(ce["xyz"], yel)
+    else:
+        dr = min((hd(r[1:3], red) for r in low), default=None) if red else None
+        dy = min((hd(r[1:3], yel) for r in low), default=None) if yel else None
+    s["S1"] = dr is not None and (dy is None or dr < dy)
+    s["S2"] = any(hd(r[1:3], red) is not None and hd(r[1:3], red) <= 25 for r in low)
+    s["S4"] = t["grasp"] == "1"
+    t_open = oe.get("tm") if oe else None
+    hold = []                                                # 닫은 뒤 폭 12 mm 이상인 동안(튜브를 쥐고 있는 구간). 처음 12 mm 아래로 떨어지면 끝
+    for r in tr:
+        if t_close is None or r[0] < t_close or (t_open is not None and r[0] > t_open):
+            continue
+        if r[0] > t_close + 1.0 and (r[5] is None or r[5] < 12.0):   # 닫는 1 s 동안은 폭 값이 늦게 바뀐다
+            break
+        hold.append(r)
+    z0 = ce["xyz"][2] if ce else None
+    lift = max((r[3] - z0 for r in hold if r[3] is not None), default=None) if z0 is not None else None
+    s["S6"] = bool(s["S4"] and lift is not None and lift >= 60.0)
+    ring_min = min((hd(r[1:3], ring) for r in hold), default=None) if ring else None
+    s["S8"] = bool(s["S6"] and ring_min is not None and ring_min <= 20)
+    s["S9"] = t["human"] == "success"
+    if not s["S1"]:                                          # 다른 튜브를 잡았으면 그 뒤 단계는 빨간 튜브로는 통과가 아님
+        for k in STAGES[1:]:
+            s[k] = False
+    for i in range(len(STAGES) - 1, 0, -1):                 # 뒤 단계를 통과했으면 앞 단계도 통과
+        if s[STAGES[i]]:
+            for j in range(i):
+                s[STAGES[j]] = True
+    first = next((k for k in STAGES if not s[k]), "")
+    b = L(t["bright_start"]) or {}
+    c = ce["xyz"] if ce else [None] * 3
+    o = oe["xyz"] if oe else [None] * 3
+    rnd = lambda v, n=1: None if v is None else round(v, n)        # noqa: E731
+    return {"model": m, "date": t["stamp"][:8], "layout": int(t["layout"]), "trial": n, "counted": int(n <= 3),
+                 "verdict": t["human"], "auto": t["auto"], "auto_type": t["type"],
+                 "red_x": rnd(red and red[0]), "red_y": rnd(red and red[1]), "yellow_x": rnd(yel and yel[0]), "yellow_y": rnd(yel and yel[1]),
+                 "ring_x": rnd(ring and ring[0]), "ring_y": rnd(ring and ring[1]),
+                 "close_x": rnd(c[0]), "close_y": rnd(c[1]), "close_z": rnd(c[2]), "close_to_red_mm": rnd(dr), "close_to_yellow_mm": rnd(dy),
+                 "open_x": rnd(o[0]), "open_y": rnd(o[1]), "open_z": rnd(o[2]), "open_to_ring_mm": rnd(hd(o, ring) if oe else None),
+                 "lift_mm": rnd(lift), "width_3s_mm": f(t.get("width_3s")), "t_close_s": rnd(ce.get("t") if ce else None),
+                 "t_open_s": rnd(oe.get("t") if oe else None), "hold_min_to_ring_mm": rnd(ring_min), "ring_src": ring_src if ring else "", **{k: int(v) for k, v in s.items()}, "first_fail": first,
+                 "t_exec_s": f(t["t_exec"]), "rtt_ms": f(t["rtt_med"]), "bright_third": rnd((b.get("third") or [None])[0]),
+                 "photo_diff_red_mm": f(t["photo_diff_red"]), "photo_diff_ring_mm": f(t["photo_diff_ring"])}
+
+
 def main(pack):
     pack = Path(pack)
     T = list(csv.DictReader(open(pack / "trials.csv", encoding="utf-8-sig")))
@@ -73,68 +133,13 @@ def main(pack):
             continue
         key = (m, t["layout"])
         seen[key] = seen.get(key, 0) + 1
-        d = pack / "trials" / t["bench"] / t["dir"]
-        meta = json.loads((d / "meta.json").read_text()) if (d / "meta.json").is_file() else {}
-        tr = [[float(r["t_mono"]), f(r["x_mm"]), f(r["y_mm"]), f(r["z_mm"]), f(r["grip_pos"]), f(r["width_mm"])]
-              for r in csv.DictReader(open(d / "tcp.csv"))] if (d / "tcp.csv").is_file() else []
-        ev = meta.get("events") or []
-        ce = next((e for e in ev if e.get("ev") == "close" and e.get("xyz")), None)
-        oe = next((e for e in ev if e.get("ev") == "open" and e.get("xyz")), None)
-        red, yel = L(t["target_xy"]), L(t["other_xy"])
         ring, ring_src = ring_of(t), "scene"
         if ring is None and t["bench"] == "mix1200_r1111_bs64_v66c" and photo.get(t["layout"]):   # 1200판 날은 판 장면이 배치 사진과 0–2 mm(L9 약 9 mm)로 맞았다
             ring, ring_src = photo[t["layout"]], "layout_photo"
         if ring is None and rings.get((t["bench"], t["layout"])):
             R = rings[(t["bench"], t["layout"])]
             ring, ring_src = [sorted(v[0] for v in R)[len(R) // 2], sorted(v[1] for v in R)[len(R) // 2]], "same_layout"
-        t_close = ce.get("tm") if ce else None
-        pre = [r for r in tr if t_close is None or r[0] <= t_close]
-        low = [r for r in pre if r[3] is not None and r[3] <= 170]
-        s = {}
-        if ce:
-            dr, dy = hd(ce["xyz"], red), hd(ce["xyz"], yel)
-        else:
-            dr = min((hd(r[1:3], red) for r in low), default=None) if red else None
-            dy = min((hd(r[1:3], yel) for r in low), default=None) if yel else None
-        s["S1"] = dr is not None and (dy is None or dr < dy)
-        s["S2"] = any(hd(r[1:3], red) is not None and hd(r[1:3], red) <= 25 for r in low)
-        s["S4"] = t["grasp"] == "1"
-        t_open = oe.get("tm") if oe else None
-        hold = []                                                # 닫은 뒤 폭 12 mm 이상인 동안(튜브를 쥐고 있는 구간). 처음 12 mm 아래로 떨어지면 끝
-        for r in tr:
-            if t_close is None or r[0] < t_close or (t_open is not None and r[0] > t_open):
-                continue
-            if r[0] > t_close + 1.0 and (r[5] is None or r[5] < 12.0):   # 닫는 1 s 동안은 폭 값이 늦게 바뀐다
-                break
-            hold.append(r)
-        z0 = ce["xyz"][2] if ce else None
-        lift = max((r[3] - z0 for r in hold if r[3] is not None), default=None) if z0 is not None else None
-        s["S6"] = bool(s["S4"] and lift is not None and lift >= 60.0)
-        ring_min = min((hd(r[1:3], ring) for r in hold), default=None) if ring else None
-        s["S8"] = bool(s["S6"] and ring_min is not None and ring_min <= 20)
-        s["S9"] = t["human"] == "success"
-        if not s["S1"]:                                          # 다른 튜브를 잡았으면 그 뒤 단계는 빨간 튜브로는 통과가 아님
-            for k in STAGES[1:]:
-                s[k] = False
-        for i in range(len(STAGES) - 1, 0, -1):                 # 뒤 단계를 통과했으면 앞 단계도 통과
-            if s[STAGES[i]]:
-                for j in range(i):
-                    s[STAGES[j]] = True
-        first = next((k for k in STAGES if not s[k]), "")
-        b = L(t["bright_start"]) or {}
-        c = ce["xyz"] if ce else [None] * 3
-        o = oe["xyz"] if oe else [None] * 3
-        rnd = lambda v, n=1: None if v is None else round(v, n)        # noqa: E731
-        rows.append({"model": m, "date": t["stamp"][:8], "layout": int(t["layout"]), "trial": seen[key], "counted": int(seen[key] <= 3),
-                     "verdict": t["human"], "auto": t["auto"], "auto_type": t["type"],
-                     "red_x": rnd(red and red[0]), "red_y": rnd(red and red[1]), "yellow_x": rnd(yel and yel[0]), "yellow_y": rnd(yel and yel[1]),
-                     "ring_x": rnd(ring and ring[0]), "ring_y": rnd(ring and ring[1]),
-                     "close_x": rnd(c[0]), "close_y": rnd(c[1]), "close_z": rnd(c[2]), "close_to_red_mm": rnd(dr), "close_to_yellow_mm": rnd(dy),
-                     "open_x": rnd(o[0]), "open_y": rnd(o[1]), "open_z": rnd(o[2]), "open_to_ring_mm": rnd(hd(o, ring) if oe else None),
-                     "lift_mm": rnd(lift), "width_3s_mm": f(t.get("width_3s")), "t_close_s": rnd(ce.get("t") if ce else None),
-                     "t_open_s": rnd(oe.get("t") if oe else None), "hold_min_to_ring_mm": rnd(ring_min), "ring_src": ring_src if ring else "", **{k: int(v) for k, v in s.items()}, "first_fail": first,
-                     "t_exec_s": f(t["t_exec"]), "rtt_ms": f(t["rtt_med"]), "bright_third": rnd((b.get("third") or [None])[0]),
-                     "photo_diff_red_mm": f(t["photo_diff_red"]), "photo_diff_ring_mm": f(t["photo_diff_ring"])})
+        rows.append(score_trial(pack, t, m, seen[key], ring, ring_src))
     out = ROOT / "data"
     for name, R in (("trials.csv", rows), ("invalid_trials.csv", inv)):
         with open(out / name, "w", newline="", encoding="utf-8") as fh:
